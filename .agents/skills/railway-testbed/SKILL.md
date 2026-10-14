@@ -1,6 +1,6 @@
 ---
 name: railway-testbed
-description: Moves a repository's test databases and brokers from local containers onto sleeping Railway services (the ANcpLua/railway-testbed pattern). Use when tests need docker compose, Testcontainers or a container daemon for a backing service, when a service joins or leaves an existing testbed, or when a testbed env file or wake budget is wrong.
+description: Moves a repository's test databases and brokers from local containers onto sleeping Railway services (the ANcpLua/railway-testbed pattern). Use when tests need docker compose, Testcontainers or a container daemon for a backing service, when a service joins or leaves an existing testbed, when a testbed env file or wake budget is wrong, or when tests, demos or verifiers run in a repository that already has `eng/testbed/` (where its connection strings come from, waking it, a failing probe).
 ---
 
 # Railway testbed
@@ -28,6 +28,22 @@ follow the `use-railway` skill.
   replica, a CPU and memory ceiling, `tcp: [port]`, no volume, no HTTP domain. A process that sends
   outbound traffic on its own (telemetry, update checks) never sleeps: turn it off in the start
   command.
+
+## Running tests against an existing testbed
+
+A repository with `eng/testbed/` has one already; use it, never recreate it to run tests.
+
+- Connection strings come from `~/.config/vitals/<repo>-testbed.env`. No local container,
+  docker compose or Testcontainers fixture is a fallback, not even for one test.
+- Wake the services before the tests: start `bun eng/testbed/probe.ts` in the background and
+  wait for `ok` on every service. A subagent checks it with waits of at most 4 minutes: its
+  prompt cache lives 5 minutes, and a longer blocking call re-reads its whole context.
+- A failing probe names the service. Run it once more (a fresh container may be pulling its
+  image); still failing, `eng/testbed/provision.sh` recreates the project and rewrites the env
+  file. A missing env file means this machine was never provisioned: run provision.sh.
+- A test that times out on connect after a green probe is a wake-budget question: raise
+  `<PREFIX>_WAKE_SECONDS_MAX` only when the probe measured a slower wake, and update the README
+  table with the new time.
 
 ## Steps
 
