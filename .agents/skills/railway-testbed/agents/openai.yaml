@@ -1,0 +1,4 @@
+interface:
+  display_name: "Railway testbed"
+  short_description: "Test databases and brokers as sleeping Railway services"
+  default_prompt: "Use $railway-testbed to move this repository's test databases and brokers onto sleeping Railway services."

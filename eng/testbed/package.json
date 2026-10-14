@@ -1,0 +1,10 @@
+{
+  "name": "example-testbed-probe",
+  "private": true,
+  "description": "Wakes and checks the example-testbed services on Railway: bun eng/testbed/probe.ts",
+  "type": "module",
+  "dependencies": {
+    "ioredis": "6.0.0",
+    "pg": "8.23.0"
+  }
+}
