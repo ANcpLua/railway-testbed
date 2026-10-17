@@ -35,12 +35,16 @@ A repository with `eng/testbed/` has one already; use it, never recreate it to r
 
 - Connection strings come from `~/.config/vitals/<repo>-testbed.env`. No local container,
   docker compose or Testcontainers fixture is a fallback, not even for one test.
-- Wake the services before the tests: start `bun eng/testbed/probe.ts` in the background and
-  wait for `ok` on every service. A subagent checks it with waits of at most 4 minutes: its
-  prompt cache lives 5 minutes, and a longer blocking call re-reads its whole context.
-- A failing probe names the service. Run it once more (a fresh container may be pulling its
-  image); still failing, `eng/testbed/provision.sh` recreates the project and rewrites the env
-  file. A missing env file means this machine was never provisioned: run provision.sh.
+- Wake the services required by the selected tests and wait for their real query checks to
+  pass. Use an existing probe selector when available; otherwise the bundled probe checks all
+  declared services. Let its configured wake budget finish and preserve the output. Do not
+  duplicate a healthy probe or restart it because a fixed time elapsed.
+- A failing probe names the service. Inspect its deployment state, bounded logs, connection
+  settings and measured wake time before retrying or changing infrastructure. Provisioning
+  preserves existing services and secrets, creates missing ones and applies the declared
+  configuration; review that plan before using it to repair a verified configuration defect.
+  A missing or stale local env file can be refreshed with `eng/testbed/provision.sh env` when
+  the existing services and secrets are present. Do not recreate a project to diagnose a timeout.
 - A test that times out on connect after a green probe is a wake-budget question: raise
   `<PREFIX>_WAKE_SECONDS_MAX` only when the probe measured a slower wake, and update the README
   table with the new time.
@@ -74,3 +78,13 @@ A repository with `eng/testbed/` has one already; use it, never recreate it to r
 
 Done when the probe is green, the plan exits 0, the tests pass against the testbed with no container
 daemon running, and no replaced container remains in the repository.
+
+## Remote execution
+
+The testbed supplies databases and brokers; it does not move a local test runner to Railway.
+`railway run` supplies Railway variables to a local process. For remote Linux builds or checks,
+use the existing `use-railway` sandbox workflow or a deliberately configured job. Pin the same
+toolchain and dependencies, retain the exact source identity and results, and stop owned compute
+after completion. Keep macOS/Windows checks on matching hosts and container-image checks on a
+host with a real container daemon. Reuse already-valid results rather than running unrelated
+suites just to keep services busy.
